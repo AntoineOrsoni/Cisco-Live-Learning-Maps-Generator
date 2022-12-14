@@ -23,7 +23,11 @@ You need to edit the `core/calendar_events.py` file.
 
 Line 104 should be: `if i.start_time <= j.start_time < i.end_time \`
 
+![1671006485832](image/README/1671006485832.png)
+
 Line 156 should be: `cell_inner_size: tuple[int, int] = EventDrawHelper.count_cell_inner_size((x1, x2), y)`
+
+![1671006496308](image/README/1671006496308.png)
 
 # Usage
 
