@@ -207,6 +207,10 @@ if __name__ == '__main__':
     for folder in folders:
         make_folder(LEARNING_MAPS_FOLDER + folder)
     
+    # 1 thread: 5 minutes and 4 seconds
+    # 5 threads: 68 seconds
+    # 10 threads: 53 seconds
+    # 20 threads: 57 seconds
     with Pool(10) as pool:
         for done in pool.imap_unordered(make_calendar_view, learning_maps):
             print(f'-- DONE {done} --')
