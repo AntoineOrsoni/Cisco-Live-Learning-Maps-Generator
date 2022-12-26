@@ -21,7 +21,7 @@ pip install -r requirements.txt
 
 ## Fixing the Calendar_View library
 
-We encountered a few unexpected behavior with the Calendar_View library.
+We encountered a few unexpected behavior with the Calendar_View library. Kudos to **Romain Cyrille** for helping me fix the `calendar_view` library.
 
 You need to edit the `core/calendar_events.py` file.
 
@@ -35,8 +35,7 @@ Line 156 should be: `cell_inner_size: tuple[int, int] = EventDrawHelper.count_ce
 
 # Usage
 
-Run the Jupyter Notebook `learning_map_http.ipynb`.
-The Learning Maps will be saved in `learning_maps` folder.
+Run the python file `learning_maps.py`. The Learning Maps will be saved in `learning_maps` folder.
 
 Once the calendar view images have been generated, you can create an associated PDF for each Learning Map category. Run the `pdf_generator.ipynb` to do so.
 
