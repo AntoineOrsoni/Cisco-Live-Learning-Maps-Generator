@@ -23,12 +23,13 @@ class Learning_Map:
         return f'{self.category = } -- {self.name = } -- {self.id = }'
 
 
-def get_learning_maps_json():
+def get_learning_maps() -> List[Learning_Map]:
 
     '''
-    Uses the Rainfocus API to return the dictionary of all learning_maps in JSON format.
+    Use the Rainfocus API and compute the dictionary of all learning_maps in JSON format.
+    Return a list of instances of Learning_Map.
     '''
-    
+
     url = "https://events.rainfocus.com/api/search"
 
     payload={'type': 'session',
@@ -40,17 +41,8 @@ def get_learning_maps_json():
     }
 
     response = requests.request("POST", url, headers=headers, data=payload)
-
-    return list(filter(lambda d: d.get('id') == 'learningmap', response.json()['attributes']))[0]
-
-
-def get_learning_maps():
-
-    '''
-    Uses the get_learning_maps_json() API and return a list of instances of Learning_Map.
-    '''
+    learning_maps_json = list(filter(lambda d: d.get('id') == 'learningmap', response.json()['attributes']))[0]
     
-    learning_maps_json = get_learning_maps_json()
     learning_maps = []
 
     for value in learning_maps_json['values']:
@@ -120,7 +112,7 @@ class Session():
         return self.name
 
 
-def make_folder(folder_path) -> None:
+def make_folder(folder_path: str) -> None:
     '''
     The learning maps files will be created in a folder for each category.
     Verifies such folders exist or create them.
@@ -209,7 +201,7 @@ if __name__ == '__main__':
     
     # 1 thread: 5 minutes and 4 seconds
     # 5 threads: 68 seconds
-    # 10 threads: 53 seconds
+    # 10 threads: 52 seconds
     # 20 threads: 57 seconds
     with Pool(10) as pool:
         for done in pool.imap_unordered(make_calendar_view, learning_maps):
