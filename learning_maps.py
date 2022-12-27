@@ -10,7 +10,7 @@ import requests
 import os
 from multiprocessing.pool import ThreadPool as Pool
 import threading
-from typing import List
+from typing import List, Type
 
 
 class Learning_Map:
@@ -23,71 +23,73 @@ class Learning_Map:
         return f'{self.category = } -- {self.name = } -- {self.id = }'
 
 
-def get_learning_maps() -> List[Learning_Map]:
+    @staticmethod
+    def get_learning_maps() -> List[Type['Learning_Map']]:
 
-    '''
-    Use the Rainfocus API and compute the dictionary of all learning_maps in JSON format.
-    Return a list of instances of Learning_Map.
-    '''
+        '''
+        Use the Rainfocus API and compute the dictionary of all learning_maps in JSON format.
+        Return a list of instances of Learning_Map.
+        '''
 
-    url = "https://events.rainfocus.com/api/search"
+        url = "https://events.rainfocus.com/api/search"
 
-    payload={'type': 'session',
-    'catalogDisplay': 'list'}
+        payload={'type': 'session',
+        'catalogDisplay': 'list'}
 
-    headers = {
-    'rfapiprofileid': '0wnUkT1BBZK3JR2t3yc5huPwNQCS8C3n',
-    'referer': 'https://www.ciscolive.com/'
-    }
+        headers = {
+        'rfapiprofileid': '0wnUkT1BBZK3JR2t3yc5huPwNQCS8C3n',
+        'referer': 'https://www.ciscolive.com/'
+        }
 
-    response = requests.request("POST", url, headers=headers, data=payload)
-    learning_maps_json = list(filter(lambda d: d.get('id') == 'learningmap', response.json()['attributes']))[0]
+        response = requests.request("POST", url, headers=headers, data=payload)
+        learning_maps_json = list(filter(lambda d: d.get('id') == 'learningmap', response.json()['attributes']))[0]
+        
+        learning_maps = []
+
+        for value in learning_maps_json['values']:
+
+            category = value['id'].rstrip().replace('\u200e', '')
+
+            for child in value['child']['values']:
+                name = child['name'].replace('\u200b', '').replace('/', ' ')
+                id = child['id']
+
+                learning_maps.append(Learning_Map(category, name, id))
+
+        return learning_maps
+
+
+    @staticmethod
+    def get_categories(learning_maps) -> List[str]:
+
+        '''
+        Computes a list of learning_maps and return a list of each unique category.
+        '''
+
+        categories = [learning_map.category for learning_map in learning_maps]
+        categories = list(set(categories))
+
+        return categories
+
     
-    learning_maps = []
+    def get_sessions(self):
+        '''
+        Take a learning map and returns the associated sessions in a json object.
+        '''
 
-    for value in learning_maps_json['values']:
+        url = "https://events.rainfocus.com/api/search"
 
-        category = value['id'].rstrip().replace('\u200e', '')
+        payload =   {'search.learningmap': self.id,
+                    'type': 'session'}
 
-        for child in value['child']['values']:
-            name = child['name'].replace('\u200b', '').replace('/', ' ')
-            id = child['id']
+        headers = {
+        'rfapiprofileid': '0wnUkT1BBZK3JR2t3yc5huPwNQCS8C3n',
+        'referer': 'https://www.ciscolive.com/'
+        }
 
-            learning_maps.append(Learning_Map(category, name, id))
+        response = requests.request("POST", url, headers=headers, data=payload)
 
-    return learning_maps
-
-
-def get_categories(learning_maps) -> List[str]:
-
-    '''
-    Computes a list of learning_maps and return a list of each unique category.
-    '''
-
-    categories = [learning_map.category for learning_map in learning_maps]
-    categories = list(set(categories))
-
-    return categories
-
-
-def get_sessions(learning_map: str):
-    '''
-    Take a learning map and returns the associated sessions in a json object.
-    '''
-
-    url = "https://events.rainfocus.com/api/search"
-
-    payload =   {'search.learningmap': learning_map,
-                'type': 'session'}
-
-    headers = {
-    'rfapiprofileid': '0wnUkT1BBZK3JR2t3yc5huPwNQCS8C3n',
-    'referer': 'https://www.ciscolive.com/'
-    }
-
-    response = requests.request("POST", url, headers=headers, data=payload)
-
-    return response.json()
+        return response.json()
 
 
 class Session():
@@ -129,11 +131,8 @@ def make_calendar_view(learning_map: Learning_Map) -> None:
     '''
 
     folder = LEARNING_MAPS_FOLDER + '/' + learning_map.category
-    learning_map_name = learning_map.name
-    learning_map_id = learning_map.id
-
-    sessions_json = get_sessions(learning_map_id)
-
+    
+    sessions_json = learning_map.get_sessions()
     sessions = []
 
     for session in sessions_json['sectionList'][0]['items']:
@@ -150,7 +149,7 @@ def make_calendar_view(learning_map: Learning_Map) -> None:
 
     config = data.CalendarConfig(
         lang='en',
-        title=learning_map_name,
+        title=learning_map.name,
         dates='2023-02-06 - 2023-02-10',
         show_date=True,
         mode='working_hours',
@@ -181,19 +180,19 @@ def make_calendar_view(learning_map: Learning_Map) -> None:
 
     calendar = Calendar.build(config)
     calendar.add_events(events)
-    calendar.save(folder + '/' + learning_map_name + ".png")
+    calendar.save(folder + '/' + learning_map.name + ".png")
     
-    return learning_map_name
+    return learning_map.name
 
 
 if __name__ == '__main__':
     
     LEARNING_MAPS_FOLDER = './learning_maps/'
     
-    learning_maps = get_learning_maps()
+    learning_maps = Learning_Map.get_learning_maps()
     print('Done collecting all learning map sessions. Generating .png for each learning_map')
 
-    folders = get_categories(learning_maps)
+    folders = Learning_Map.get_categories(learning_maps)
 
     # in case the folders to store learning_maps don't already exist
     for folder in folders:
