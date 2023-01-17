@@ -51,7 +51,6 @@ class Learning_Map:
             category = value['id'].rstrip().replace('\u200e', '')
 
             for child in value['child']['values']:
-                name = child['name'].replace('\u200b', '').replace('/', ' ')
                 id = child['id']
 
                 learning_maps.append(Learning_Map(category, name, id))
