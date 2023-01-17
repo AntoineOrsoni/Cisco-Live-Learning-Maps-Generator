@@ -2,3 +2,4 @@ venv
 *.ipynb*/
 .DS_Store
 open_tech_seminar.ipynb
+credentials.json
