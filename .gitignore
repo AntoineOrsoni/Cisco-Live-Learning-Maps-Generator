@@ -2,3 +2,4 @@ venv
 *.ipynb*/
 .DS_Store
 credentials.json
+test*
