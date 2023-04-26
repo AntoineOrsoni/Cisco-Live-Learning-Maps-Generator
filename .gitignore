@@ -4,3 +4,6 @@ venv
 credentials.json
 test*
 open_sessions/*Bonny.xlsx
+customer_sessions.ipynb
+customers_sessions_output.xlsx
+french_customers_sessions.xlsx
