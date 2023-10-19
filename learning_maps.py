@@ -11,12 +11,13 @@ import os
 from multiprocessing.pool import ThreadPool as Pool
 import threading
 from typing import List, Type
+import json
 
 
 class Learning_Map:
     def __init__(self, category, name, id):
         self.category = category
-        self.name = name
+        self.name = name.replace('/', '-')
         self.id = id
 
     def __str__(self):
@@ -33,15 +34,16 @@ class Learning_Map:
 
         url = "https://events.rainfocus.com/api/search"
 
-        payload={'type': 'session',
+        payload = {'type': 'session',
         'catalogDisplay': 'list'}
 
         headers = {
-        'rfapiprofileid': '0wnUkT1BBZK3JR2t3yc5huPwNQCS8C3n',
+        'rfapiprofileid': credentials['rfapiprofileid'],
         'referer': 'https://www.ciscolive.com/'
         }
 
         response = requests.request("POST", url, headers=headers, data=payload)
+        print(response.json())
         learning_maps_json = list(filter(lambda d: d.get('id') == 'learningmap', response.json()['attributes']))[0]
         
         learning_maps = []
@@ -52,8 +54,12 @@ class Learning_Map:
 
             for child in value['child']['values']:
                 id = child['id']
+                name = child['name']
 
                 learning_maps.append(Learning_Map(category, name, id))
+
+        for learning_map in learning_maps:
+            print(learning_map)
 
         return learning_maps
 
@@ -82,7 +88,7 @@ class Learning_Map:
                     'type': 'session'}
 
         headers = {
-        'rfapiprofileid': '0wnUkT1BBZK3JR2t3yc5huPwNQCS8C3n',
+        'rfapiprofileid': credentials['rfapiprofileid'],
         'referer': 'https://www.ciscolive.com/'
         }
 
@@ -95,12 +101,20 @@ class Session():
 
     def __init__(self, session_json):
         self.type = session_json['type']
-        try:
-            self.start = datetime.strptime(session_json['times'][0]['utcStartTime'], '%Y/%m/%d %H:%M:%S') + timedelta(hours=1)
-            self.end = datetime.strptime(session_json['times'][0]['utcEndTime'], '%Y/%m/%d %H:%M:%S') + timedelta(hours=1)
-        except KeyError:
-            self.start = 'Null'
-            self.end = 'Null'
+        if 'times' in session_json:
+            start = session_json['times'][0].get('utcStartTime', 'Null')
+            if start != 'Null':
+                self.start = datetime.strptime(start, '%Y/%m/%d %H:%M:%S') + timedelta(hours=1)
+            else:
+                self.start = 'Null'
+            end = session_json['times'][0].get('utcEndTime', 'Null')
+            if end != 'Null':
+                self.end = datetime.strptime(end, '%Y/%m/%d %H:%M:%S') + timedelta(hours=1)
+            else:
+                self.end = 'Null'
+            self.incomplete = False
+        else: 
+            self.imcomplete = True
         self.name = session_json['title']
         self.id = session_json['code']
         match int(self.id.split('-')[1][0]):
@@ -109,8 +123,8 @@ class Session():
             case 3: self.level = 'Advanced'
             case 4: self.level = 'General'
         
-    def __str__(self):
-        return self.name
+    def __str__(self) -> str:
+        return f"{self.id} - {self.name}"
 
 
 def make_folder(folder_path: str) -> None:
@@ -149,7 +163,7 @@ def make_calendar_view(learning_map: Learning_Map) -> None:
     config = data.CalendarConfig(
         lang='en',
         title=learning_map.name,
-        dates='2023-02-06 - 2023-02-10',
+        dates='2024-02-05 - 2024-02-09',
         show_date=True,
         mode='working_hours',
         title_vertical_align='top',
@@ -158,33 +172,36 @@ def make_calendar_view(learning_map: Learning_Map) -> None:
     events = []
 
     for session in sessions:
+        if session.incomplete == False:
+            if session.type != 'Walk-in Lab':
+                match session.level:
+                        case 'Introductory': 
+                            color = EventStyle(event_border=(116, 191, 75, 240), event_fill=(116, 191, 75, 180))
+                        case 'Intermediate': 
+                            color = EventStyle(event_border=(251, 171, 44, 240), event_fill=(251, 171, 44, 180))
+                        case 'Advanced': 
+                            color = EventStyle(event_border=(227, 36, 27, 240), event_fill=(227, 36, 27, 180))
+                        case 'General': 
+                            color = EventStyle(event_border=(0, 188, 235, 240), event_fill=(0, 188, 235, 180))
+                        
+                events.append(Event(day=session.start.strftime('%Y-%m-%d'), 
+                                    start=session.start.strftime('%H:%M'), 
+                                    end=session.end.strftime('%H:%M'), 
+                                    title=session.id,
+                                    notes=session.name,
+                                    style=color))
 
-        if session.type != 'Walk-in Lab':
-            match session.level:
-                    case 'Introductory': 
-                        color = EventStyle(event_border=(116, 191, 75, 240), event_fill=(116, 191, 75, 180))
-                    case 'Intermediate': 
-                        color = EventStyle(event_border=(251, 171, 44, 240), event_fill=(251, 171, 44, 180))
-                    case 'Advanced': 
-                        color = EventStyle(event_border=(227, 36, 27, 240), event_fill=(227, 36, 27, 180))
-                    case 'General': 
-                        color = EventStyle(event_border=(0, 188, 235, 240), event_fill=(0, 188, 235, 180))
-                    
-            events.append(Event(day=session.start.strftime('%Y-%m-%d'), 
-                                start=session.start.strftime('%H:%M'), 
-                                end=session.end.strftime('%H:%M'), 
-                                title=session.id,
-                                notes=session.name,
-                                style=color))
-
-    calendar = Calendar.build(config)
-    calendar.add_events(events)
-    calendar.save(folder + '/' + learning_map.name + ".png")
+        calendar = Calendar.build(config)
+        calendar.add_events(events)
+        calendar.save(folder + '/' + learning_map.name + ".png")
     
     return learning_map.name
 
 
 if __name__ == '__main__':
+
+    with open('credentials.json') as file:
+        credentials = json.load(file)
     
     LEARNING_MAPS_FOLDER = './learning_maps/'
     

@@ -3,7 +3,7 @@ venv
 .DS_Store
 credentials.json
 test*
-open_sessions/*Bonny.xlsx
+open_sessions/old
 customer_sessions.ipynb
 customers_sessions_output.xlsx
 french_customers_sessions.xlsx
