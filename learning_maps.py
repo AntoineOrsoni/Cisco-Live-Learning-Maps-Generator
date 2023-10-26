@@ -43,7 +43,6 @@ class Learning_Map:
         }
 
         response = requests.request("POST", url, headers=headers, data=payload)
-        print(response.json())
         learning_maps_json = list(filter(lambda d: d.get('id') == 'learningmap', response.json()['attributes']))[0]
         
         learning_maps = []
@@ -104,12 +103,12 @@ class Session():
         if 'times' in session_json:
             start = session_json['times'][0].get('utcStartTime', 'Null')
             if start != 'Null':
-                self.start = datetime.strptime(start, '%Y/%m/%d %H:%M:%S') + timedelta(hours=1)
+                self.start = datetime.strptime(start, '%Y/%m/%d %H:%M:%S') + timedelta(hours=2)
             else:
                 self.start = 'Null'
             end = session_json['times'][0].get('utcEndTime', 'Null')
             if end != 'Null':
-                self.end = datetime.strptime(end, '%Y/%m/%d %H:%M:%S') + timedelta(hours=1)
+                self.end = datetime.strptime(end, '%Y/%m/%d %H:%M:%S') + timedelta(hours=2)
             else:
                 self.end = 'Null'
             self.incomplete = False
