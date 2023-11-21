@@ -113,7 +113,7 @@ class Session():
                 self.end = 'Null'
             self.incomplete = False
         else: 
-            self.imcomplete = True
+            self.incomplete = True
         self.name = session_json['title']
         self.id = session_json['code']
         match int(self.id.split('-')[1][0]):
@@ -164,7 +164,7 @@ def make_calendar_view(learning_map: Learning_Map) -> None:
         title=learning_map.name,
         dates='2024-02-05 - 2024-02-09',
         show_date=True,
-        mode='working_hours',
+        mode='day_hours',
         title_vertical_align='top',
     )
 
